@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+# Exit immediately if any command returns an error
+set -e
+
+#Check for the table name
+if [ -z "$1" ]; then
+    echo "Provide the Table Name"
+    exit 1
+fi
+TABLE_NAME=$1
+
+
+# Insert items
+for FILE in json_files/*.json; do
+    RETURN_PUT=$(aws dynamodb put-item \
+    --table-name $TABLE_NAME \
+    --item file://$FILE \
+    --return-consumed-capacity TOTAL \
+    --return-item-collection-metrics SIZE)
+
+    # Print output
+    echo $RETURN_PUT
+done

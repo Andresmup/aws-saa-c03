@@ -1,0 +1,5 @@
+{
+    "pk": {"S": "10"},
+    "fruit": {"S": "Strawberry"},
+    "rating": {"N": "1"}
+}

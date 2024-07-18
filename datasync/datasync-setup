@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+
+#Check for bucket name
+if [ -z "$1" ]; then
+    echo "A bucket name is required"
+    exit 1
+fi
+SOURCE_BUCKET=$1
+
+#Check for bucket name
+if [ -z "$2" ]; then
+    echo "A bucket name is required"
+    exit 1
+fi
+DESTINATION_BUCKET=$2
+
+#Check for filename 
+if [ -z "$3" ]; then
+    echo "The filename to upload is required"
+    exit 1
+fi
+FILENAME=$3
+
+#Check for key 
+if [ -z "$4" ]; then
+    echo "The key is required"
+    exit 1
+fi
+KEY=$4
+
+
+# Check if the source bucket already exists
+if aws s3api head-bucket --bucket "$SOURCE_BUCKET" 2>/dev/null; then
+    echo "Bucket $SOURCE_BUCKET already exists."
+else
+    # Create the bucket if it does not exist
+    aws s3api create-bucket --bucket "$SOURCE_BUCKET" --query Location --output text
+    if [ $? -eq 0 ]; then
+        echo "Source bucket $SOURCE_BUCKET created successfully"
+    else
+        echo "Failed to create bucket $SOURCE_BUCKET."
+        exit 3
+    fi
+fi
+
+echo "This file is going to be upload in directly."
+aws s3api put-object --bucket $SOURCE_BUCKET --object $FILENAME --key $KEY
+
+
+# Check if the destination bucket already exists
+if aws s3api head-bucket --bucket "$DESTINATION_BUCKET" 2>/dev/null; then
+    echo "Bucket $DESTINATION_BUCKET already exists."
+else
+    # Create the bucket if it does not exist
+    aws s3api create-bucket --bucket "$DESTINATION_BUCKET" --query Location --output text
+    if [ $? -eq 0 ]; then
+        echo "Destination bucket $DESTINATION_BUCKET created successfully"
+    else
+        echo "Failed to create bucket $DESTINATION_BUCKET."
+        exit 3
+    fi
+fi
+
+#Upload file to S3 source bucket
+aws s3api put-object --bucket $SOURCE_BUCKET --object $FILENAME --key $KEY
+echo "$FILENAME was uploaded to $SOURCE_BUCKET."
+

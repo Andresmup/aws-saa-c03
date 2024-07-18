@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+
+# Exit immediately if any command returns an error
+set -e
+
+#Check for bucket name
+if [ -z "$1" ]; then
+    echo "A bucket name is need"
+    exit 1
+fi
+BUCKET_NAME=$1
+
+#Check for filename 
+if [ -z "$2" ]; then
+    echo "The filename to upload is required"
+    exit 1
+fi
+FILENAME=$2
+
+#Check for key 
+if [ -z "$3" ]; then
+    echo "The key is required"
+    exit 1
+fi
+KEY=$3
+
+#Get the size of the file
+FILENAME_SIZE=$(wc -c < $FILENAME | awk '{print $1}')
+
+#Threshold set to 10000000 (100mb)
+THRESHOLD_SIZE=100000000
+
+SPLIT_SIZE=10000000
+
+# If for check if file is greater than threshold
+if [ "$FILENAME_SIZE" -gt "$THRESHOLD_SIZE" ]; then
+    NUM_PARTITIONS=$(( ($FILENAME_SIZE + $SPLIT_SIZE - 1) / $SPLIT_SIZE ))
+    echo "This file is going to be upload in $NUM_PARTITIONS parts of 10MB each."
+
+    
+    # Check if .tmp dir exists, and create it
+    if [ ! -d ".tmp/" ]; then
+        mkdir -p ".tmp/"
+    fi
+    
+    #Split file
+    split -d -b $SPLIT_SIZE $FILENAME .tmp/part_
+    
+    #Initialize json
+    JSON='{"Parts": []}'
+
+    #Start multipart upload and save upload-id
+    UPLOAD_ID=$(aws s3api create-multipart-upload --bucket $BUCKET_NAME --key $KEY | jq -r '.UploadId')
+
+    for ((i=0; i<NUM_PARTITIONS; i++)); do
+        printf -v PADDED_NUMBER "%02d" "$i"
+
+        PART_NUMBER=$((i + 1))
+        PART_FILE=".tmp/part_$(printf "%02d" $i)"
+
+        if [[ ! -f "$PART_FILE" ]]; then
+            echo "Archivo de parte no encontrado: $PART_FILE"
+            rm -r .tmp/*
+            exit 1
+        fi
+
+        #Upload each part and save the etag returned
+        ETAG=$(aws s3api upload-part --bucket $BUCKET_NAME --key $KEY --part-number $PART_NUMBER --body $PART_FILE --upload-id $UPLOAD_ID | jq -r '.ETag' | tr -d '"')
+
+        #Put the part number and the etag in the json
+        JSON=$(echo $JSON | jq --arg pn $PART_NUMBER --arg et "$ETAG" '.Parts += [{"PartNumber": ($pn|tonumber), "ETag": $et}]')
+    done
+
+    # Save JSON temporarily
+    echo "$JSON" | jq . > ".tmp/parts.json"
+    JSONPATH=".tmp/parts.json"
+
+    # Send complete multipart upload to S3
+    aws s3api complete-multipart-upload --bucket "$BUCKET_NAME" --key "$KEY" --upload-id "$UPLOAD_ID" --multipart-upload file://"$JSONPATH"
+
+
+    #Delete files from tmp dir
+    rm -r .tmp/*
+else
+    echo "This file is going to be upload in directly."
+    aws s3api put-object --bucket $BUCKET_NAME --object $FILENAME --key $KEY
+fi

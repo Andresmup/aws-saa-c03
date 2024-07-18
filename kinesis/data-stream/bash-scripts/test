@@ -1,0 +1,7 @@
+curl -X POST https://f6vrtfz1xh.execute-api.us-east-1.amazonaws.com/data-ingestion-001/data \
+-H "Content-Type: application/json" \
+-d '{
+  "StreamName": "dev-kinesis",
+  "Data": "eyJrZXkxIjogInZhbHVlMSIsICJrZXkyIjogInZhbHVlMiJ9",
+  "PartitionKey": "partition-test-1"
+}'

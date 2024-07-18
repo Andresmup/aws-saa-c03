@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+
+# Exit immediately if any command returns an error
+set -e
+
+#Check for bucket name
+if [ -z "$1" ]; then
+    echo "A bucket name is need"
+    exit 1
+fi
+BUCKET_NAME=$1
+
+#Check for filename 
+if [ -z "$2" ]; then
+    echo "The filename is required"
+    exit 1
+fi
+FILENAME=$2
+
+#Check for object key 
+if [ -z "$3" ]; then
+    echo "The key is required"
+    exit 1
+fi
+KEY=$3
+
+
+SHA256_CHECKSUM_VALUE=$(shasum -a 256 $FILENAME | cut -f1 -d\ | xxd -r -p | base64)
+
+aws s3api put-object --bucket $BUCKET_NAME --body $FILENAME --key $KEY --checksum-algorithm="SHA256" --checksum-sha256 $SHA256_CHECKSUM_VALUE

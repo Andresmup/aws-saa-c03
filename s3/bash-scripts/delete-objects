@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+# Exit immediately if any command returns an error
+set -e
+
+#Check for bucket name
+if [ -z "$1" ]; then
+    echo "A bucket name is need"
+    exit 1
+fi
+BUCKET_NAME=$1
+
+
+#Using s3
+#aws s3 rm s3://$BUCKET_NAME --recursive
+
+#Using s3api, useful when versioning is enable
+aws s3api delete-objects --bucket $BUCKET_NAME --delete "$(aws s3api list-object-versions --bucket "$BUCKET_NAME" --output=json --query='{Objects: Versions[].{Key:Key,VersionId:VersionId}}')"

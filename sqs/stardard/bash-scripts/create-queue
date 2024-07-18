@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+# Exit immediately if any command returns an error
+set -e
+
+#Check for queue name
+if [ -z "$1" ]; then
+    echo "A queue name is needed"
+    exit 1
+fi
+QUEUE_NAME=$1
+
+aws sqs create-queue --queue-name $QUEUE_NAME

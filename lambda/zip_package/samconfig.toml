@@ -1,0 +1,7 @@
+version=0.1
+[default.package.parameters]
+s3_bucket = "bucket-for-lambda-storage-saa-c03-practice"
+region = "us-east-1"
+[default.deploy.parameters]
+s3_bucket = "bucket-for-lambda-storage-saa-c03-practice"
+region = "us-east-1"

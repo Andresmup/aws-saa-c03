@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+#Check for crawler name
+if [ -z "$1" ]; then
+    echo "A crawler name is needed"
+    exit 1
+fi
+CRAWLER_NAME=$1
+
+#Start crawler
+aws glue start-crawler --name $CRAWLER_NAME

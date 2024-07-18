@@ -1,0 +1,14 @@
+{
+  "Title": {
+    "DataType": "String",
+    "StringValue": "Gladiator"
+  },
+  "Gender": {
+    "DataType": "String",
+    "StringValue": "Action"
+  },
+  "Year": {
+    "DataType": "Number",
+    "StringValue": "1999"
+  }
+}

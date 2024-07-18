@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# Crear un directorio para los archivos JSON
+mkdir -p json_files
+
+# Generar 10 archivos JSON con datos
+for i in {1..10}; do
+  cat <<EOT > json_files/item_$i.json
+{
+    "pk": {"S": "$i"},
+    "fruit": {"S": "Fruit_$i"},
+    "rating": {"N": "$((i % 10 + 1))"}
+}
+EOT
+done
+
+echo "Archivos JSON generados en el directorio json_files."

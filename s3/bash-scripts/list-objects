@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+#Check for bucket name
+if [ -z "$1" ]; then
+    echo "A bucket name is need"
+    exit 1
+fi
+BUCKET_NAME=$1
+
+aws s3api list-objects-v2 --bucket $BUCKET_NAME

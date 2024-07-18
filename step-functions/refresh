@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+# Exit immediately if any command returns an error
+set -e
+
+#Delete previous image
+aws s3 rm s3://source-bucket-step-function-images/inputs --recursive
+
+#Upload image
+aws s3 cp image_1.jpg s3://source-bucket-step-function-images/inputs/image_1.jpg

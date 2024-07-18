@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+
+# Exit immediately if any command returns an error
+set -e
+
+#Check for the region
+if [ -z "$1" ]; then
+    echo "Provide the Regon"
+    exit 1
+fi
+REGION=$1
+
+#Check for the AZ
+if [ -z "$2" ]; then
+    echo "Provide the AZ"
+    exit 1
+fi
+AZ=$2
+
+#Check for the tag name
+if [ -z "$3" ]; then
+    echo "A tag name is needed"
+    exit 1
+fi
+TAG_NAME=$3
+
+#Get the vpc id
+VPC_ID=$(aws ec2 describe-vpcs --region $REGION --filters "Name=isDefault,Values=true" --query "Vpcs[*].VpcId" --output text)
+
+#Get the subnet id
+SUBNET_ID=$(aws ec2 describe-subnets --filters "Name=vpc-id,Values=$VPC_ID" --filters "Name=availability-zone,Values=$AZ" --query 'Subnets[].SubnetId[]' --output text)
+
+#Create Security Group for this VPC 
+SG_ID=$(aws ec2 create-security-group --group-name "SG-$VPC_ID-$TAG_NAME" --description "SG $VPC_ID" --vpc-id $VPC_ID --output text)
+
+#Change security group properties
+#Allow all http/s inbound
+RETURN_1=$(aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 80 --cidr 0.0.0.0/0)
+RETURN_2=$(aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 443 --cidr 0.0.0.0/0)
+
+#Allow shh from my ip
+RETURN_3=$(aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 22 --cidr 18.206.107.24/29)
+RETURN_4=$(aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 22 --cidr 191.82.29.209/32)
+
+#Get lastest amazon linux 2 AMI
+AMI=$(aws ec2 describe-images \
+--owners amazon \
+--filters "Name=name,Values=amzn2-ami-hvm-*-x86_64-gp2" "Name=state,Values=available" \
+--query "Images[?starts_with(Name, 'amzn2')]|sort_by(@, &CreationDate)[-1].ImageId" \
+--region $REGION \
+--output text)
+
+#Create an Instance Profile
+INSTANCE_PROFILE_ID=$(aws iam create-instance-profile --instance-profile-name $TAG_NAME-profile --query 'InstanceProfile.InstanceProfileId' --output text)
+
+#Create base role
+ROLE_ID=$(aws iam create-role --role-name $TAG_NAME-role --assume-role-policy-document assume-role-policy.json --query 'Role.RoleId' --output text)
+
+#Attach SMM Policy to base role
+RETURN_5=$(aws iam attach-role-policy --role-name $TAG_NAME-role --policy-arn arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore)
+
+#Add role to instance profile
+RETURN_6=$(aws iam add-role-to-instance-profile --instance-profile-name $TAG_NAME-profile --role-name $TAG_NAME-role)
+
+#Launch instance on the network
+INSTANCE_ID=$(aws ec2 run-instances --image-id $AMI \
+--instance-type t2.micro \
+--security-group-ids $SG_ID \
+--subnet-id $SUBNET_ID \
+--key-name saa-c03 \
+--tag-specification 'ResourceType=instance,Tags=[{Key=Name,Value="$TAG_NAME"}]' \
+--user-data user-data.sh \
+--query 'Instances[0].InstanceId' --output text)
+
+
+#Associate instance profile with ec2 instance
+RETURN_7=$(aws ec2  associate-iam-instance-profile --iam-instance-profile $TAG_NAME-profile --instance-id $INSTANCE_ID)

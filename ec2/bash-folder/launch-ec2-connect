@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+
+# Exit immediately if any command returns an error
+set -e
+
+#Check for the region
+if [ -z "$1" ]; then
+    echo "Provide the Regon"
+    exit 1
+fi
+REGION=$1
+
+#Check for the AZ
+if [ -z "$2" ]; then
+    echo "Provide the AZ"
+    exit 1
+fi
+AZ=$2
+
+#Check for the tag name
+if [ -z "$3" ]; then
+    echo "A tag name is needed"
+    exit 1
+fi
+TAG_NAME=$3
+
+#Get the vpc id
+VPC_ID=$(aws ec2 describe-vpcs --region $REGION --filters "Name=isDefault,Values=true" --query "Vpcs[*].VpcId" --output text)
+
+#Get the subnet id
+SUBNET_ID=$(aws ec2 describe-subnets --filters "Name=vpc-id,Values=$VPC_ID" --filters "Name=availability-zone,Values=$AZ" --query 'Subnets[].SubnetId[]' --output text)
+
+#Create Security Group for this VPC 
+SG_ID=$(aws ec2 create-security-group --group-name "SG-$VPC_ID-$TAG_NAME" --description "SG $VPC_ID" --vpc-id $VPC_ID --output text)
+
+#Change security group properties to allow shh from my ip
+RETURN_3=$(aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 22 --cidr 18.206.107.24/29)
+RETURN_4=$(aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 22 --cidr 191.82.29.209/32)
+
+#Get lastest amazon linux 2 AMI
+AMI=$(aws ec2 describe-images \
+--owners amazon \
+--filters "Name=name,Values=amzn2-ami-hvm-*-x86_64-gp2" "Name=state,Values=available" \
+--query "Images[?starts_with(Name, 'amzn2')]|sort_by(@, &CreationDate)[-1].ImageId" \
+--region $REGION \
+--output text)
+
+
+#Launch instance on the network
+INSTANCE_ID=$(aws ec2 run-instances --image-id $AMI \
+--instance-type t2.micro \
+--security-group-ids $SG_ID \
+--subnet-id $SUBNET_ID \
+--tag-specification 'ResourceType=instance,Tags=[{Key=Name,Value=$TAG_NAME}]' \
+--query 'Instances[0].InstanceId' --output text)
+
+# Check if .tmp dir exists, and create it
+if [ -d ".tmp/" ]; then
+    # Remove previous files
+    rm -r .tmp/*
+else
+    # If not exist create it
+    mkdir -p ".tmp/"
+fi
+
+#Create key
+openssl genrsa -out .tmp/$TAG_NAME
+
+#Chmod the key
+chmod 400 .tmp/$TAG_NAME
+
+# Wait until the instance is 'running'
+aws ec2 wait instance-running --instance-ids $INSTANCE_ID
+
+# Get the public ip address
+PUBLIC_IP=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID \
+--query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
+
+echo $PUBLIC_IP
+
+#Send the key to the instance
+RETURN_8=$(aws ec2-instance-connect send-ssh-public-key --instance-id $INSTANCE_ID --instance-os-user ec2-user --availability-zone $AZ --ssh-public-key .tmp/$TAG_NAME)
+
+ssh -i ec2connect ec2-user@$PUBLIC_IP

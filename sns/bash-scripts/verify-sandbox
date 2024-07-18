@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+#Check for phone number
+if [ -z "$1" ]; then
+    echo "A topic phone number is required"
+    exit 1
+fi
+PHONE_NUMBER=$1
+
+#Check for one time password
+if [ -z "$2" ]; then
+    echo "A one time password is required"
+    exit 1
+fi
+PASSWORD=$2
+
+aws sns verify-sms-sandbox-phone-number --phone-number $PHONE_NUMBER --one-time-password $PASSWORD

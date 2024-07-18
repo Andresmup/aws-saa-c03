@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+#Check for phone number
+if [ -z "$1" ]; then
+    echo "A topic phone number is required"
+    exit 1
+fi
+PHONE_NUMBER=$1
+
+aws sns create-sms-sandbox-phone-number --phone-number $PHONE_NUMBER --language-code es-ES

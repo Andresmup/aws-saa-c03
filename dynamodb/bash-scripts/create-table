@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+# Exit immediately if any command returns an error
+set -e
+
+#Check for the table name
+if [ -z "$1" ]; then
+    echo "Provide the Table Name"
+    exit 1
+fi
+TABLE_NAME=$1
+
+#Check for the AZ
+if [ -z "$2" ]; then
+    echo "Provide the PK"
+    exit 1
+fi
+PK=$2
+
+# Create table
+TABLE_OUTPUT=$(aws dynamodb create-table \
+--table-name $TABLE_NAME \
+--attribute-definitions AttributeName=$PK,AttributeType=S \
+--key-schema AttributeName=$PK,KeyType=HASH \
+--provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5)
+
+# Get the table id and arn
+TABLE_ARN=$(echo $TABLE_OUTPUT | jq -r '.TableDescription.TableArn')
+TABLE_ID=$(echo $TABLE_OUTPUT | jq -r '.TableDescription.TableId')
+
+# Echo values
+echo "TableArn: $TABLE_ARN"
+echo "TableId: $TABLE_ID"

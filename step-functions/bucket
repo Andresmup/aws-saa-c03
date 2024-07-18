@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+# Exit immediately if any command returns an error
+set -e
+
+#Create bucket
+aws s3 mb s3://source-bucket-step-function-images
+
+#Configure bucket
+aws s3api put-bucket-notification-configuration \
+--bucket source-bucket-step-function-images \
+--notification-configuration '{
+  "EventBridgeConfiguration": {
+  }
+}'
+
+#Allow rekognition access S3 
+aws s3api put-bucket-policy \
+--bucket source-bucket-step-function-images \
+--policy '{
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Sid": "AllowRekognition",
+			"Principal": {
+			    "Service": "rekognition.amazonaws.com"
+			},
+			"Effect": "Allow",
+			"Action": "s3:*",
+			"Resource": "arn:aws:s3:::source-bucket-step-function-images"
+		}
+	]
+}'

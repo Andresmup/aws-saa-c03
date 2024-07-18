@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+#Check for topic name file
+if [ -z "$1" ]; then
+    echo "A topic name is needed"
+    exit 1
+fi
+TOPIC_NAME=$1
+
+#Check for message file
+if [ -z "$2" ]; then
+    echo "Message path is required"
+    exit 1
+fi
+MESSAGE_FILE=$2
+
+#Check for region
+REGION=$(aws configure get region --output text)
+if [ "$3" ]; then
+    echo "Region provide, $3 will be used"
+    REGION=$3
+fi
+
+ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+
+aws sns publish \
+--message $MESSAGE_FILE \
+--topic-arn "arn:aws:sns:$REGION:$ACCOUNT_ID:$TOPIC_NAME" 

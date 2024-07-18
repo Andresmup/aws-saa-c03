@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+
+# Exit immediately if any command returns an error
+set -e
+
+#Check for queue name
+if [ -z "$1" ]; then
+    echo "A queue name is needed"
+    exit 1
+fi
+QUEUE_NAME=$1
+
+#Check for message body
+if [ -z "$2" ]; then
+    echo "A message body is needed"
+    exit 1
+fi
+MESSAGE_BODY=$2
+
+#Check for message attribute
+if [ -z "$3" ]; then
+    echo "A message attribute is needed"
+    exit 1
+fi
+MESSAGE_ATTRIBUTES=$3
+
+QUEUE_URL=$(aws sqs get-queue-url --queue-name $QUEUE_NAME --output text)
+
+aws sqs send-message \
+--queue-url $QUEUE_URL \
+--message-body $MESSAGE_BODY \
+--message-attributes $MESSAGE_ATTRIBUTES

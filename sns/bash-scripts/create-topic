@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+#Check for template file
+if [ -z "$1" ]; then
+    echo "A topic name is needed"
+    exit 1
+fi
+TOPIC_NAME=$1
+
+aws sns create-topic --name $TOPIC_NAME

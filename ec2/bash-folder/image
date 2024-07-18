@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# Exit immediately if any command returns an error
+set -e
+
+#Check for the AMI name
+if [ -z "$1" ]; then
+    echo "AMI name"
+    exit 1
+fi
+AMI_NAME=$1
+
+#Get lastest amazon linux 2 AMI
+AMI=$(aws ec2 describe-images \
+--owners amazon \
+--filters "Name=name,Values=al2023-ami-*-x86_64" "Name=state,Values=available" \
+--query "Images[?starts_with(Name, 'al2023-ami-2023')]|sort_by(@, &CreationDate) | reverse(@) | [0].ImageId" \
+--region $REGION \
+--output text)
+
+

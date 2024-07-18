@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+
+#Check for topic name file
+if [ -z "$1" ]; then
+    echo "A topic name is needed"
+    exit 1
+fi
+TOPIC_NAME=$1
+
+#Check for protocol
+if [ -z "$2" ]; then
+    echo "protocol required"
+    exit 1
+fi
+PROTOCOL=$2
+
+#Check for notification endpoint
+if [ -z "$3" ]; then
+    echo "The notification endpoint is required"
+    exit 1
+fi
+NOTIFICATION_ENDPOINT=$3
+
+#Check for region
+REGION=$(aws configure get region --output text)
+if [ "$4" ]; then
+    echo "Region provide, $4 will be used"
+    REGION=$4
+fi
+
+ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+
+
+
+aws sns subscribe \
+--topic-arn "arn:aws:sns:$REGION:$ACCOUNT_ID:$TOPIC_NAME" \
+--protocol $PROTOCOL \
+--notification-endpoint $NOTIFICATION_ENDPOINT

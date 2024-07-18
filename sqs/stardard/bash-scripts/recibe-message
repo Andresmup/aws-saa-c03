@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+# Exit immediately if any command returns an error
+set -e
+
+#Check for queue name
+if [ -z "$1" ]; then
+    echo "A queue name is needed"
+    exit 1
+fi
+QUEUE_NAME=$1
+
+QUEUE_URL=$(aws sqs get-queue-url --queue-name $QUEUE_NAME --output text)
+
+aws sqs receive-message --queue-url $QUEUE_URL --attribute-names All --message-attribute-names All --max-number-of-messages 10

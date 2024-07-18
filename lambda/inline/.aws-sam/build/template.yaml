@@ -1,0 +1,13 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Resources:
+  InlineLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: python3.12
+      PackageType: Zip
+      InlineCode: "def handler(event, context):\n    message = 'Hello {} {} you are\
+        \ {} years old!'.format(event['first_name'], event['last_name'], event['age'])\
+        \  \n    print(\"Log this for me\")\n    return { \n        'message' : message\n\
+        \    }\n"
