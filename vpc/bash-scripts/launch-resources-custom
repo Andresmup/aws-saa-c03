@@ -3,9 +3,9 @@
 # Exit immediately if any command returns an error
 set -e
 
-#Check for the tag name
+#Check for the vpc name
 if [ -z "$1" ]; then
-    echo "A bucket name is need"
+    echo "A vpc name is need"
     exit 1
 fi
 VPC_NAME=$1
